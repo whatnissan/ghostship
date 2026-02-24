@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  displayName   String
+  role          UserRole  @default(RECEIVER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  shippingProfile ShippingProfile?
+  routingCodes    RoutingCode[]
+
+  @@index([email])
+}
+
+enum UserRole {
+  RECEIVER
+  ADMIN
+}
+
+model ShippingProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encryptedLine1     String
+  encryptedLine2     String?
+  encryptedCity      String
+  encryptedState     String
+  encryptedZip       String
+  encryptedCountry   String
+  encryptedName      String
+  countryCode        String   @default("US")
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  routingCodes RoutingCode[]
+}
+
+model RoutingCode {
+  id                String          @id @default(cuid())
+  code              String          @unique
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  shippingProfileId String
+  shippingProfile   ShippingProfile @relation(fields: [shippingProfileId], references: [id])
+  isActive          Boolean         @default(true)
+  label             String?
+  usageCount        Int             @default(0)
+  maxUsage          Int?
+  expiresAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  shipments Shipment[]
+
+  @@index([code])
+  @@index([userId])
+}
+
+model Shipment {
+  id                     String         @id @default(cuid())
+  routingCodeId          String
+  routingCode            RoutingCode    @relation(fields: [routingCodeId], references: [id])
+  senderEmail            String
+  senderName             String
+  weightOz               Float
+  lengthIn               Float
+  widthIn                Float
+  heightIn               Float
+  carrier                String
+  serviceLevel           String
+  stripePaymentIntentId  String         @unique
+  stripeStatus           String         @default("pending")
+  amountCents            Int
+  currency               String         @default("usd")
+  shippoShipmentId       String?
+  shippoTransactionId    String?
+  qrCodeUrl              String?
+  trackingNumber         String?
+  labelUrl               String?
+  status                 ShipmentStatus @default(PAYMENT_PENDING)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([routingCodeId])
+  @@index([stripePaymentIntentId])
+}
+
+enum ShipmentStatus {
+  PAYMENT_PENDING
+  PAYMENT_FAILED
+  LABEL_GENERATING
+  LABEL_READY
+  DROPPED_OFF
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
