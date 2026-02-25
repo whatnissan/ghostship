@@ -7,8 +7,7 @@ const US_STATES = [
   'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
   'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
   'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
-  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
-  'DC'
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
 ]
 
 interface RoutingCode {
@@ -38,7 +37,6 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchCodes() }, [])
 
-  // Auto-lookup ZIP when city + state are both filled
   useEffect(() => {
     if (address.city.length > 2 && address.state.length === 2) {
       lookupZip(address.city, address.state)
@@ -48,16 +46,12 @@ export default function DashboardPage() {
   async function lookupZip(city: string, state: string) {
     setZipLookup(true)
     try {
-      const res = await fetch(
-        `https://api.zippopotam.us/us/${state}/${encodeURIComponent(city)}`
-      )
+      const res = await fetch(`https://api.zippopotam.us/us/${state}/${encodeURIComponent(city)}`)
       if (res.ok) {
         const data = await res.json()
-        if (data.places?.[0]) {
-          setAddress(a => ({ ...a, zip: data.places[0]['post code'] }))
-        }
+        if (data.places?.[0]) setAddress(a => ({ ...a, zip: data.places[0]['post code'] }))
       }
-    } catch { /* silent fail — user can enter manually */ }
+    } catch { /* silent fail */ }
     finally { setZipLookup(false) }
   }
 
@@ -76,7 +70,7 @@ export default function DashboardPage() {
     setError(''); setCreating(true)
     try {
       const body: Record<string, unknown> = { label: label || undefined }
-      if (showForm && codes.length === 0) body.address = address
+      if (codes.length === 0) body.address = address
       const res = await fetch('/api/routing-codes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -96,9 +90,7 @@ export default function DashboardPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
-      Loading...
-    </div>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading...</div>
   )
 
   return (
@@ -124,9 +116,7 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div className="bg-red-950 border border-red-900 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
-            {error}
-          </div>
+          <div className="bg-red-950 border border-red-900 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">{error}</div>
         )}
 
         {showForm && (
@@ -134,90 +124,60 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-white mb-1">
               {codes.length === 0 ? 'Set up your shipping address' : 'Create another routing code'}
             </h2>
-            <p className="text-sm text-slate-400 mb-5">
-              Stored encrypted. Never visible to senders.
-            </p>
+            <p className="text-sm text-slate-400 mb-5">Stored encrypted. Never visible to senders.</p>
 
             {codes.length === 0 && (
               <div className="space-y-3 mb-4">
-                {/* Recipient name */}
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Recipient Name</label>
-                  <input type="text" placeholder="Full name on label"
-                    value={address.name}
+                  <input type="text" placeholder="Full name on label" value={address.name}
                     onChange={e => setAddress(a => ({ ...a, name: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
                 </div>
-
-                {/* Street */}
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Street Address</label>
-                  <input type="text" placeholder="123 Main St"
-                    value={address.line1}
+                  <input type="text" placeholder="123 Main St" value={address.line1}
                     onChange={e => setAddress(a => ({ ...a, line1: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
                 </div>
-
-                {/* Apt */}
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Apt / Suite <span className="text-slate-600">(optional)</span></label>
-                  <input type="text" placeholder="Apt 4B"
-                    value={address.line2}
+                  <input type="text" placeholder="Apt 4B" value={address.line2}
                     onChange={e => setAddress(a => ({ ...a, line2: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
                 </div>
-
-                {/* City + State side by side */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">City</label>
-                    <input type="text" placeholder="Los Angeles"
-                      value={address.city}
+                    <input type="text" placeholder="Los Angeles" value={address.city}
                       onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">State</label>
-                    <select
-                      value={address.state}
-                      onChange={e => setAddress(a => ({ ...a, state: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    >
+                    <select value={address.state} onChange={e => setAddress(a => ({ ...a, state: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500">
                       <option value="">Select state</option>
-                      {US_STATES.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
+                      {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
-
-                {/* ZIP — auto-filled */}
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">
-                    ZIP Code
-                    {zipLookup && <span className="text-violet-400 ml-2">Looking up...</span>}
+                    ZIP Code {zipLookup && <span className="text-violet-400 ml-1">Looking up...</span>}
                   </label>
-                  <input type="text" placeholder="Auto-filled from city + state"
-                    value={address.zip}
+                  <input type="text" placeholder="Auto-filled from city + state" value={address.zip}
                     onChange={e => setAddress(a => ({ ...a, zip: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
                 </div>
               </div>
             )}
 
             <div className="mb-4">
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Code Label <span className="text-slate-600">(optional)</span>
-              </label>
-              <input type="text" placeholder='e.g. "Fan Mail"'
-                value={label} onChange={e => setLabel(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
+              <label className="block text-xs font-medium text-slate-400 mb-1">Code Label <span className="text-slate-600">(optional)</span></label>
+              <input type="text" placeholder='e.g. "Fan Mail"' value={label}
+                onChange={e => setLabel(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500" />
             </div>
 
             <button onClick={createCode} disabled={creating}
@@ -233,13 +193,9 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-2xl font-bold text-violet-400 tracking-widest">{code.code}</span>
-                  {code.label && (
-                    <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">{code.label}</span>
-                  )}
+                  {code.label && <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">{code.label}</span>}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {code.usageCount} shipment{code.usageCount !== 1 ? 's' : ''} received
-                </div>
+                <div className="text-xs text-slate-500 mt-1">{code.usageCount} shipment{code.usageCount !== 1 ? 's' : ''} received</div>
               </div>
               <button onClick={() => copy(code.code)}
                 className="text-sm text-violet-400 hover:text-violet-300 font-medium px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
