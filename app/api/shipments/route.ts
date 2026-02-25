@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         weightOz, lengthIn, widthIn, heightIn,
         carrier: selectedRate.provider,
         serviceLevel: selectedRate.servicelevel.token,
-        stripePaymentIntentId: 'pending',
+        stripePaymentIntentId: `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         amountCents: totalCents,
         status: 'PAYMENT_PENDING',
         shippoShipmentId: selectedRate.object_id,
