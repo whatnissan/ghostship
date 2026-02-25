@@ -1,13 +1,29 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 export default function HomePage() {
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/routing-codes')
+      .then(r => { if (r.ok) setLoggedIn(true) })
+      .catch(() => {})
+  }, [])
+
   return (
     <main className="flex flex-col min-h-screen">
       <nav className="flex items-center justify-between px-8 py-5 border-b border-slate-800">
         <span className="text-xl font-bold text-white tracking-tight">👻 Ghost Ship</span>
         <div className="flex gap-4">
-          <Link href="/login" className="text-sm text-slate-400 hover:text-white transition-colors">Log in</Link>
-          <Link href="/signup" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-500 transition-colors">Get Started</Link>
+          {loggedIn ? (
+            <Link href="/dashboard" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-500 transition-colors">My Dashboard</Link>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm text-slate-400 hover:text-white transition-colors">Log in</Link>
+              <Link href="/signup" className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-500 transition-colors">Get Started</Link>
+            </>
+          )}
         </div>
       </nav>
 

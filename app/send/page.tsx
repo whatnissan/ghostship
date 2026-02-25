@@ -171,7 +171,10 @@ export default function SendPage() {
   return (
     <main className="min-h-screen bg-slate-950">
       <nav className="border-b border-slate-800 px-8 py-5 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-white">👻 Ghost Ship</Link>
+        <Link href="/" className="text-xl font-bold text-white hover:text-violet-400 transition-colors">👻 Ghost Ship</Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="text-sm text-slate-300 hover:text-white transition-colors">My Dashboard</Link>
+        </div>
       </nav>
 
       <div className="max-w-lg mx-auto px-6 py-12">
