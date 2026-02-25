@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { decryptAddress } from '@/lib/encryption'
 import { createLabelWithQRCode } from '@/lib/shippo'
 import Stripe from 'stripe'
+import { sendQRCodeEmail, sendPackageNotificationEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -41,6 +42,30 @@ export async function POST(req: NextRequest) {
         data: { status: 'LABEL_READY', shippoTransactionId: result.transactionId, qrCodeUrl: result.qrCodeUrl, labelUrl: result.labelUrl, trackingNumber: result.trackingNumber },
       })
       await prisma.routingCode.update({ where: { id: shipment.routingCodeId }, data: { usageCount: { increment: 1 } } })
+
+      // Send emails
+      const receiver = await prisma.user.findUnique({ where: { id: shipment.routingCode.userId }, select: { email: true, displayName: true } })
+      
+      await sendQRCodeEmail({
+        toEmail: shipment.senderEmail,
+        toName: shipment.senderName ?? 'Sender',
+        qrCodeUrl: result.qrCodeUrl,
+        carrier: shipment.carrier ?? '',
+        service: shipment.serviceLevel ?? '',
+        trackingNumber: result.trackingNumber,
+        routingCode: shipment.routingCode.code,
+      }).catch(err => console.error('[email] QR code email failed:', err))
+
+      if (receiver) {
+        await sendPackageNotificationEmail({
+          toEmail: receiver.email,
+          toName: receiver.displayName ?? 'there',
+          senderName: shipment.senderName ?? 'Someone',
+          carrier: shipment.carrier ?? '',
+          service: shipment.serviceLevel ?? '',
+          trackingNumber: result.trackingNumber,
+        }).catch(err => console.error('[email] Notification email failed:', err))
+      }
     } catch (err) {
       console.error('[webhook] Label generation failed:', err)
       await prisma.shipment.updateMany({ where: { stripePaymentIntentId: pi.id }, data: { status: 'PAYMENT_FAILED' } }).catch(() => {})
