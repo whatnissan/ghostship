@@ -7,7 +7,7 @@ import { isValidRoutingCodeFormat } from '@/lib/routing-codes'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { routingCode, senderEmail, senderName, weightOz, lengthIn, widthIn, heightIn, selectedRateId } = body
+    const { routingCode, senderEmail, senderName, weightOz, lengthIn, widthIn, heightIn, selectedRate } = body
 
     if (!routingCode || !isValidRoutingCodeFormat(routingCode))
       return NextResponse.json({ error: 'Invalid routing code format' }, { status: 400 })
@@ -22,24 +22,25 @@ export async function POST(req: NextRequest) {
 
     const pkg = { weightOz, lengthIn, widthIn, heightIn }
 
-    if (!selectedRateId) {
+    // Step 1: just get rates
+    if (!selectedRate) {
       const rates = await getShippingRates(pkg)
       return NextResponse.json({ rates })
     }
 
-    const rates = await getShippingRates(pkg)
-    const selectedRate = rates.find((r: { object_id: string }) => r.object_id === selectedRateId)
-    if (!selectedRate) return NextResponse.json({ error: 'Rate not found' }, { status: 400 })
-
+    // Step 2: create payment intent with selected rate passed from frontend
     const totalCents = Math.round(parseFloat(selectedRate.amount) * 100 * 1.15)
 
     const shipment = await prisma.shipment.create({
       data: {
         routingCodeId: code.id, senderEmail, senderName,
         weightOz, lengthIn, widthIn, heightIn,
-        carrier: selectedRate.provider, serviceLevel: selectedRate.servicelevel.token,
-        stripePaymentIntentId: 'pending', amountCents: totalCents,
-        status: 'PAYMENT_PENDING', shippoShipmentId: selectedRateId,
+        carrier: selectedRate.provider,
+        serviceLevel: selectedRate.servicelevel.token,
+        stripePaymentIntentId: 'pending',
+        amountCents: totalCents,
+        status: 'PAYMENT_PENDING',
+        shippoShipmentId: selectedRate.object_id,
       },
     })
 
@@ -47,9 +48,12 @@ export async function POST(req: NextRequest) {
     await prisma.shipment.update({ where: { id: shipment.id }, data: { stripePaymentIntentId: paymentIntent.id } })
 
     return NextResponse.json({
-      clientSecret: paymentIntent.client_secret, shipmentId: shipment.id,
-      amountCents: totalCents, carrier: selectedRate.provider,
-      service: selectedRate.servicelevel.name, estimatedDays: selectedRate.estimated_days,
+      clientSecret: paymentIntent.client_secret,
+      shipmentId: shipment.id,
+      amountCents: totalCents,
+      carrier: selectedRate.provider,
+      service: selectedRate.servicelevel.name,
+      estimatedDays: selectedRate.estimated_days,
     })
   } catch (err) {
     console.error('[shipments POST]', err)

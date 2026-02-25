@@ -154,7 +154,7 @@ export default function SendPage() {
           lengthIn: parseFloat(dims.lengthIn),
           widthIn: parseFloat(dims.widthIn),
           heightIn: parseFloat(dims.heightIn),
-          selectedRateId: selectedRate.object_id,
+          selectedRate: selectedRate,
         }),
       })
       const data = await res.json()
