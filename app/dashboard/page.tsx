@@ -96,7 +96,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-950">
       <header className="border-b border-slate-800 px-8 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold text-white">👻 Ghost Ship</span>
+        <a href="/" className="text-xl font-bold text-white hover:text-violet-400 transition-colors">👻 Ghost Ship</a>
         <div className="flex items-center gap-4"><a href="/send" className="text-sm text-slate-400 hover:text-white">Send a Package</a><button onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/') }} className="text-sm text-slate-400 hover:text-white">Log out</button></div>
       </header>
 
